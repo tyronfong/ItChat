@@ -1,9 +1,19 @@
-import itchat
-import time
+import thread
+import itchat, time
+from itchat.content import *
 
-if __name__ == '__main__':
-    itchat.login(enableCmdQR=True)
-    while 1:
-        time.sleep(10)
-        print('pulling msg')
-        itchat.pull()
+
+@itchat.msg_register(TEXT, isGroupChat=True)
+def receive_group_msg(msg):
+    print('received group msg.')
+
+@itchat.msg_register(TEXT, isFriendChat=True)
+def receive_friend_msg(msg):
+    print('received friend msg.')
+
+itchat.auto_login(True)
+thread.start_new_thread(itchat.run(), (True, True))
+print('here')
+while 1:
+    command = input()
+    print(command)

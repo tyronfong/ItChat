@@ -29,10 +29,8 @@ def load_login(core):
     core.start_receiving   = start_receiving
     core.get_msg           = get_msg
     core.logout            = logout
-    core.pull = pull
 
-def pull(self):
-    print(self.msgList)
+
 
 def login(self, enableCmdQR=False, picDir=None, qrCallback=None,
         loginCallback=None, exitCallback=None):
