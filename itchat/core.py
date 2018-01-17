@@ -134,6 +134,11 @@ class Core(object):
             it is defined in components/login.py
         '''
         raise NotImplementedError()
+    def pull(self):
+        ''' pull all cached msgs
+            will clear the cache after this action
+        '''
+        raise NotImplementedError()
     def logout(self):
         ''' logout
             if core is now alive
