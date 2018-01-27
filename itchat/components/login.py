@@ -246,7 +246,6 @@ def start_receiving(self, exitCallback=None, getReceivingFnOnly=False):
         retryCount = 0
         while self.alive:
             try:
-                print('receiving.')
                 i = sync_check(self)
                 if i is None:
                     self.alive = False
@@ -324,7 +323,6 @@ def sync_check(self):
     return pm.group(2)
 
 def get_msg(self):
-    print('hehe')
     url = '%s/webwxsync?sid=%s&skey=%s&pass_ticket=%s' % (
         self.loginInfo['url'], self.loginInfo['wxsid'],
         self.loginInfo['skey'],self.loginInfo['pass_ticket'])

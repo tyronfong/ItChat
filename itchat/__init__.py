@@ -19,7 +19,6 @@ originInstance = new_instance()
 # actually it toke me less than 30 seconds, god bless Uganda
 
 # components.login
-pull = originInstance.pull
 login                       = originInstance.login
 get_QRuuid                  = originInstance.get_QRuuid
 get_QR                      = originInstance.get_QR
