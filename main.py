@@ -114,16 +114,16 @@ def my_align(un_align_str, length=0, addin=' '):
 @itchat.msg_register(TEXT, isGroupChat=True)
 def receive_group_msg(msg):
     enqueue_group_msg(msg)
-    print(msg)
-    print('received group msg.')
+    # print(msg)
+    # print('received group msg.')
 
 
 @itchat.msg_register(TEXT, isFriendChat=True)
 def receive_friend_msg(msg):
     enqueue_friend_msg(msg)
-    print(msg)
-    print(msg['Text'])
-    print('received friend msg.')
+    # print(msg)
+    # print(msg['Text'])
+    # print('received friend msg.')
 
 
 itchat.auto_login(True)
@@ -148,14 +148,26 @@ while 1:
         print_msgs()
     elif command.strip().find('rg') == 0:
         matchObj = re.match(r'\s*(\S+)\s+(\S+)\s+(.*)', command, re.M | re.I)
-        target_group = matchObj.group(2)
-        msg_content = matchObj.group(3)
-        itchat.send_msg(msg_content, find_group_name_by_index(int(target_group)))
+        if matchObj:
+            target_group = matchObj.group(2)
+            msg_content = matchObj.group(3)
+            msg_obj = {'User': {'UserName': find_group_name_by_index(int(target_group))}, 'FromUserName': 'dummy','CreateTime': int(time.time()), 'Text': msg_content}
+            enqueue_group_msg(msg_obj)
+            itchat.send_msg(msg_content, find_group_name_by_index(int(target_group)))
+        else:
+            print('Unknown command: %s' % command)
+            print(useage_text)
     elif command.strip().find('r') == 0:
         matchObj = re.match(r'\s*(\S+)\s+(\S+)\s+(.*)', command, re.M | re.I)
-        target_user = matchObj.group(2)
-        msg_content = matchObj.group(3)
-        itchat.send_msg(msg_content, find_friend_name_by_index(int(target_user)))
+        if matchObj:
+            target_user = matchObj.group(2)
+            msg_content = matchObj.group(3)
+            msg_obj = {'User':{'UserName':find_friend_name_by_index(int(target_user))}, 'FromUserName':'dummy', 'CreateTime':int(time.time()), 'Text':msg_content}
+            enqueue_friend_msg(msg_obj)
+            itchat.send_msg(msg_content, find_friend_name_by_index(int(target_user)))
+        else:
+            print('Unknown command: %s' % command)
+            print(useage_text)
     elif command.strip().find('g') == 0:
         matchObj = re.match(r'\s*(\S+)\s+(\S+)', command, re.M | re.I)
         target_user = matchObj.group(2)
