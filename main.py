@@ -9,6 +9,8 @@ sys.setdefaultencoding('utf8')
 
 friend_msgs = {}
 group_msgs = {}
+in_chatting = False
+chatting_target = ''
 
 
 def enqueue_friend_msg(msg):
@@ -18,6 +20,9 @@ def enqueue_friend_msg(msg):
             friend_msgs[user]['msgs'] += [msg]
             friend_msgs[user]['unreadAmount'] += 1
             insert_flag = True
+            if in_chatting and chatting_target[:1] != 'g' and find_friend_name_by_index(chatting_target) == user:
+                print('%s %s: %s' % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(msg['CreateTime'])), my_align(friend_msgs[user]['displayName'], 16), msg['Text']))
+                pass
             break
     if not insert_flag:
         # it is a new msg which was not enqueue before
@@ -31,15 +36,25 @@ def enqueue_group_msg(msg):
             group_msgs[group]['msgs'] += [msg]
             group_msgs[group]['unreadAmount'] += 1
             insert_flag = True
+            if in_chatting and chatting_target[:1] == 'g' and find_group_name_by_index(chatting_target[1:]) == group:
+                print('%s %s: %s' % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(msg['CreateTime'])), my_align(group_msgs[group]['displayName'], 16), msg['Text']))
+                pass
             break
     if not insert_flag:
         # it is a new msg which was not enqueue before
         group_msgs[msg['User']['UserName']] = {'displayName': msg['User']['NickName'], 'msgs': [msg], 'unreadAmount': 1}
 
 
-def print_friend_msgs(count, show_history, show_latest):
+def print_friend_msgs(count=10, show_history=False, show_latest=False, specific_ref=None):
+    specific_user_name = '' if specific_ref is None else find_friend_name_by_index(specific_ref)
     print('====Friend Messages==============')
     for user_name in friend_msgs:
+        if specific_user_name == '':
+            pass
+        elif specific_user_name == user_name:
+            pass
+        else:
+            continue
         print('%s-----(%s):' % (friend_msgs[user_name]['displayName'], find_friend_index_by_name(user_name)))
         if show_history:
             start_position = 0
@@ -61,9 +76,16 @@ def print_friend_msgs(count, show_history, show_latest):
         print
 
 
-def print_group_msgs(count, show_history, show_latest):
+def print_group_msgs(count=10, show_history=False, show_latest=False, specific_ref=None):
+    specific_group_name = '' if specific_ref is None else find_group_name_by_index(specific_ref)
     print('====Group Messages===============')
     for group_name in group_msgs:
+        if specific_group_name == '':
+            pass
+        elif specific_group_name == group_name:
+            pass
+        else:
+            continue
         print('%s-----(%s):' % (group_msgs[group_name]['displayName'], find_group_index_by_name(group_name)))
         if show_history:
             start_position = 0
@@ -92,6 +114,8 @@ def find_friend_index_by_name(user_name):
 
 
 def find_friend_name_by_index(user_index):
+    if isinstance(user_index, str):
+        user_index = int(user_index)
     return itchat.originInstance.memberList[user_index]['UserName']
 
 
@@ -102,12 +126,14 @@ def find_group_index_by_name(group_name):
 
 
 def find_group_name_by_index(group_index):
+    if isinstance(group_index, str):
+        group_index = int(group_index)
     return itchat.originInstance.chatroomList[group_index]['UserName']
 
 
 def print_msgs(count=10, show_history=False, show_latest=False):
-    print_friend_msgs(count, show_history, show_latest)
-    print_group_msgs(count, show_history, show_latest)
+    print_friend_msgs(count, show_history, show_latest, specific_ref=None)
+    print_group_msgs(count, show_history, show_latest, specific_ref=None)
 
 
 def find_chinese(text):
@@ -151,6 +177,10 @@ useage_text = 'Usage:\n' \
               '                       with "member ref" witch is used for reply)\n' \
               '    pl         (pull all latest unread messages with "member ref" witch is used for reply)\n' \
               '    pa         (pull all cached historic messages with "member ref" witch is used for reply)\n' \
+              '    enter [target user ref]\n' \
+              '               (enter chat transaction with specific friend)\n' \
+              '    enter g[target user ref]\n' \
+              '               (enter chat transaction with specific group)\n' \
               '    rg [target group ref] [message content]\n' \
               '               (reply message to specific group,\n' \
               '                e.g. reply 0 where are you?)\n' \
@@ -160,37 +190,66 @@ useage_text = 'Usage:\n' \
               '    h          (show help menu)'
 while 1:
     command = raw_input()
-    if command.strip().find('h') == 0:
-        print useage_text
-    elif command.strip().find('pa') == 0:
-        print_msgs(show_history=True)
-    elif command.strip().find('pl') == 0:
-        print_msgs(show_latest=True)
-    elif command.strip().find('p') == 0:
-        print_msgs()
-    elif command.strip().find('rg') == 0:
-        matchObj = re.match(r'\s*(\S+)\s+(\S+)\s+(.*)', command, re.M | re.I)
-        if matchObj:
-            target_group = matchObj.group(2)
-            msg_content = matchObj.group(3)
-            msg_obj = {'User': {'UserName': find_group_name_by_index(int(target_group))}, 'FromUserName': 'dummy','CreateTime': int(time.time()), 'Text': msg_content}
-            enqueue_group_msg(msg_obj)
-            itchat.send_msg(msg_content, find_group_name_by_index(int(target_group)))
+    if in_chatting:
+        if command.strip().find('exit') == 0:
+            in_chatting = False
+            print('Returned to menu model.')
         else:
-            print('Unknown command: %s' % command)
-            print(useage_text)
-    elif command.strip().find('r') == 0:
-        matchObj = re.match(r'\s*(\S+)\s+(\S+)\s+(.*)', command, re.M | re.I)
-        if matchObj:
-            target_user = matchObj.group(2)
-            msg_content = matchObj.group(3)
-            msg_obj = {'User':{'UserName':find_friend_name_by_index(int(target_user))}, 'FromUserName':'dummy', 'CreateTime':int(time.time()), 'Text':msg_content}
-            enqueue_friend_msg(msg_obj)
-            itchat.send_msg(msg_content, find_friend_name_by_index(int(target_user)))
-        else:
-            print('Unknown command: %s' % command)
-            print(useage_text)
+            if chatting_target.find('g') == 0:
+                msg_obj = {'User': {'UserName': find_group_name_by_index(chatting_target[1:])}, 'FromUserName': 'dummy','CreateTime': int(time.time()), 'Text': command}
+                itchat.send_msg(command, find_group_name_by_index(chatting_target[1:]))
+                pass
+            else:
+                msg_obj = {'User': {'UserName': find_friend_name_by_index(chatting_target)}, 'FromUserName': 'dummy', 'CreateTime': int(time.time()), 'Text': command}
+                itchat.send_msg(command, find_friend_name_by_index(chatting_target))
+                pass
     else:
-        print('Unknown command: %s' % command)
-        print(useage_text)
+        if command.strip().find('h') == 0:
+            print useage_text
+        elif command.strip().find('pa') == 0:
+            print_msgs(show_history=True)
+        elif command.strip().find('pl') == 0:
+            print_msgs(show_latest=True)
+        elif command.strip().find('p') == 0:
+            print_msgs()
+        elif command.strip().find('rg') == 0:
+            re_obj = re.match(r'\s*(\S+)\s+(\S+)\s+(.*)', command, re.M | re.I)
+            if re_obj:
+                target_group = re_obj.group(2)
+                msg_content = re_obj.group(3)
+                msg_obj = {'User': {'UserName': find_group_name_by_index(int(target_group))}, 'FromUserName': 'dummy','CreateTime': int(time.time()), 'Text': msg_content}
+                enqueue_group_msg(msg_obj)
+                itchat.send_msg(msg_content, find_group_name_by_index(int(target_group)))
+            else:
+                print('Unknown command: %s' % command)
+                print(useage_text)
+        elif command.strip().find('r') == 0:
+            re_obj = re.match(r'\s*(\S+)\s+(\S+)\s+(.*)', command, re.M | re.I)
+            if re_obj:
+                target_user = re_obj.group(2)
+                msg_content = re_obj.group(3)
+                msg_obj = {'User':{'UserName':find_friend_name_by_index(int(target_user))}, 'FromUserName':'dummy', 'CreateTime':int(time.time()), 'Text':msg_content}
+                enqueue_friend_msg(msg_obj)
+                itchat.send_msg(msg_content, find_friend_name_by_index(int(target_user)))
+            else:
+                print('Unknown command: %s' % command)
+                print(useage_text)
+        elif command.strip().find('enter') == 0:
+            re_obj = re.match(r'\s*(\S+)\s+(g*\d+)(.*)', command, re.M | re.I)
+            if re_obj:
+                chatting_target = re_obj.group(2)
+                in_chatting = True
+                print('Enter "exit" to exit.')
+                if chatting_target[:1] == 'g':
+                    print_group_msgs(show_history=True, specific_ref=int(chatting_target[1:]))
+                    pass
+                else:
+                    print_friend_msgs(show_history=True, specific_ref=int(chatting_target))
+                    pass
+            else:
+                print('Unknown command: %s' % command)
+                print(useage_text)
+        else:
+            print('Unknown command: %s' % command)
+            print(useage_text)
 
