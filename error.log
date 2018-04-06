@@ -1,0 +1,10 @@
+
+Traceback (most recent call last):
+  File "/root/github-repo/ItChat/itchat/components/register.py", line 60, in configured_reply
+    r = replyFn(msg)
+  File "main.py", line 167, in receive_friend_msg
+    enqueue_friend_msg(msg)
+  File "main.py", line 29, in enqueue_friend_msg
+    friend_msgs[msg['User']['UserName']] = {'displayName': msg['User']['RemarkName'] if msg['User']['RemarkName'] != 
+'' else msg['User']['NickName'], 'msgs': [msg], 'unreadAmount': 1}
+KeyError: 'RemarkName'
